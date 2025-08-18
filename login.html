@@ -27,40 +27,64 @@
   </div>
 
   <script type="module">
-    import { auth } from "./firebase.js";
+    import { auth, db } from "./firebase.js";
     import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { ref, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    // Email/Password Login
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
+    // Login with Email/Password
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const email = document.getElementById("loginEmail").value;
       const password = document.getElementById("loginPassword").value;
 
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          // Check if it's the admin account
-          if (email === "mody9000000z@gmail.com") {
-            window.location.href = "admin.html"; // go to Admin Panel
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+
+        // Check role from database
+        const snap = await get(child(ref(db), "users/" + cred.user.uid));
+        if (snap.exists()) {
+          const userData = snap.val();
+          if (userData.role === "admin") {
+            window.location.href = "admin.html";
           } else {
-            window.location.href = "app.html";   // go to Student App
+            window.location.href = "app.html";
           }
-        })
-        .catch((error) => {
-          alert("Login failed: " + error.message);
-        });
+        } else {
+          // لو مش موجود في الداتابيز نضيفه كـ student افتراضي
+          await set(ref(db, "users/" + cred.user.uid), {
+            name: cred.user.displayName || "Unknown",
+            email: cred.user.email,
+            role: "student",
+            createdAt: Date.now()
+          });
+          window.location.href = "app.html";
+        }
+
+      } catch (error) {
+        alert("Login failed: " + error.message);
+      }
     });
 
-    // Google Login (always student → app.html)
-    document.getElementById("googleLogin").addEventListener("click", () => {
+    // Google Login → دايمًا student
+    document.getElementById("googleLogin").addEventListener("click", async () => {
       const provider = new GoogleAuthProvider();
-      signInWithPopup(auth, provider)
-        .then(() => {
-          window.location.href = "app.html";
-        })
-        .catch((error) => {
-          alert("Google login failed: " + error.message);
-        });
+      try {
+        const cred = await signInWithPopup(auth, provider);
+        // لو مش موجود في الداتابيز نحطه كـ student
+        const snap = await get(child(ref(db), "users/" + cred.user.uid));
+        if (!snap.exists()) {
+          await set(ref(db, "users/" + cred.user.uid), {
+            name: cred.user.displayName || "Unknown",
+            email: cred.user.email,
+            role: "student",
+            createdAt: Date.now()
+          });
+        }
+        window.location.href = "app.html";
+      } catch (error) {
+        alert("Google login failed: " + error.message);
+      }
     });
   </script>
 </body>
