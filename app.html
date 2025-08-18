@@ -1,141 +1,393 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IKS 8C – App</title>
-  <style>
-    body{font-family:Arial;background:#0b0f14;color:#e6edf3;margin:0}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#121821;border-bottom:1px solid #233041}
-    .btn{padding:8px 12px;border-radius:10px;border:1px solid #2a3340;background:#151b24;color:#d9e2ef;cursor:pointer}
-    .btn.primary{border:0;background:linear-gradient(45deg,#7c3aed,#22d3ee);color:#fff}
-    nav{display:flex;gap:8px;flex-wrap:wrap;padding:12px;background:#0f141b;border-bottom:1px solid #233041}
-    .wrap{padding:16px}
-    .card{background:#121821;border:1px solid #233041;border-radius:14px;padding:14px;margin:10px 0}
-    .hidden{display:none!important}
-    .chat{height:280px;overflow:auto;background:#0f141b;border:1px solid #283547;border-radius:12px;padding:10px;margin-bottom:8px}
-    .msg{background:#121a24;border-radius:10px;padding:6px 8px;margin:6px 0}
-    .msg.me{background:#1a2431}
-    table{width:100%;border-collapse:collapse}
-    td,th{border-bottom:1px solid #233041;padding:8px;text-align:start}
-  </style>
-  <script type="module">
-    import { auth, db } from "./firebase.js";
-    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IKS 8C – App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6a0dad;
+            --secondary-color: #8b5cf6;
+            --background-start: #e0eafc;
+            --background-end: #cfdef3;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --secondary-text-color: #666666;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --border-color: #e0e0e0;
+        }
 
-    const SUBJECTS = ["Arabic","English","EnglishPlus","ICT","Science","Social","Economics"];
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--background-start), var(--background-end));
+            color: var(--text-color);
+            min-height: 100vh;
+        }
 
-    const $ = (id)=>document.getElementById(id);
-    const show = (el)=>el.classList.remove("hidden");
-    const hide = (el)=>el.classList.add("hidden");
+        /* Background Animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50px;
+            left: -50px;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+            animation: move-background 20s infinite alternate ease-in-out;
+            z-index: -1;
+        }
 
-    let currentUser=null;
-    let currentSubject="Arabic";
+        @keyframes move-background {
+            from { transform: translate(0, 0); }
+            to { transform: translate(100px, 100px); }
+        }
 
-    onAuthStateChanged(auth, async (u)=>{
-      currentUser = u || null;
-      if(!u){ location.href = "login.html"; return; }
-      $("who").innerText = u.displayName || u.email;
-      loadSubject(currentSubject);
-      loadChat();
-      // show admin link based on db role (handled in admin page itself)
-      $("adminLink").onclick = ()=>location.href="admin.html";
-    });
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
 
-    window.logout = ()=>signOut(auth).then(()=>location.href="index.html");
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: var(--secondary-text-color);
+        }
 
-    function selectSubject(sub){
-      currentSubject=sub;
-      document.querySelectorAll(".sbtn").forEach(b=>b.classList.remove("primary"));
-      document.querySelector(`[data-sub='${sub}']`).classList.add("primary");
-      loadSubject(sub);
-    }
+        .header-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
 
-    function loadSubject(sub){
-      $("subjectTitle").innerText = sub+" – Assignments";
-      const listEl = $("hwList");
-      listEl.innerHTML = "Loading...";
-      onValue(ref(db,"homework/"+sub),(snap)=>{
-        listEl.innerHTML = "";
-        if(!snap.exists()){ listEl.innerHTML = "<div class='card'>No assignments yet.</div>"; return; }
-        snap.forEach(ch=>{
-          const d = ch.val();
-          const div = document.createElement("div");
-          div.className="card";
-          div.innerHTML = `
-            <div><strong>${d.text || "Assignment"}</strong></div>
-            ${d.fileUrl ? `<div><a href='${d.fileUrl}' target='_blank'>Attachment</a></div>` : ""}
-            <div style='font-size:12px;color:#9fb0c6;margin-top:6px'>Posted ${new Date(d.createdAt||Date.now()).toLocaleString()}</div>
-          `;
-          listEl.appendChild(div);
-        });
-      });
-    }
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 2px solid var(--primary-color);
+            background: transparent;
+            color: var(--primary-color);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, background-color 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            background: rgba(106, 13, 173, 0.1);
+        }
 
-    function loadChat(){
-      const box = $("chatBox");
-      onValue(ref(db,"chat"),(snap)=>{
-        box.innerHTML = "";
-        snap.forEach(m=>{
-          const d = m.val();
-          const div = document.createElement("div");
-          div.className = "msg"+(d.uid===currentUser?.uid?" me":"");
-          div.textContent = (d.name||"Student")+": "+d.text;
-          box.appendChild(div);
-        });
-        box.scrollTop = box.scrollHeight;
-      });
-    }
+        .btn.primary {
+            border: none;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3);
+        }
 
-    window.sendMsg = ()=>{
-      const input = $("chatMsg");
-      if(!input.value.trim()) return;
-      push(ref(db,"chat"),{
-        uid: currentUser?.uid, name: currentUser?.displayName || "Student",
-        text: input.value.trim(), createdAt: Date.now()
-      });
-      input.value="";
-    }
+        .btn.primary:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(45deg, #7c3aed, #8b5cf6);
+            box-shadow: 0 6px 20px rgba(106, 13, 173, 0.4);
+        }
 
-    // init subject buttons
-    window.addEventListener("DOMContentLoaded",()=>{
-      const nav = $("subjects");
-      SUBJECTS.forEach((s,i)=>{
-        const b = document.createElement("button");
-        b.className = "btn sbtn"+(i===0?" primary":"");
-        b.dataset.sub=s;
-        b.textContent = s.replace("EnglishPlus","English+").replace("Social","Social Studies");
-        b.onclick = ()=>selectSubject(s);
-        nav.appendChild(b);
-      });
-    });
-  </script>
+        nav {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 24px;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav .btn {
+            flex-shrink: 0;
+            border-color: transparent;
+            color: var(--primary-color);
+        }
+        
+        nav .btn:hover {
+            background: rgba(106, 13, 173, 0.1);
+        }
+
+        nav .btn.primary {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(106, 13, 173, 0.2);
+        }
+        
+        nav .btn.primary:hover {
+            transform: translateY(0);
+        }
+
+        .wrap {
+            padding: 24px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 8px 20px var(--shadow-color);
+            padding: 24px;
+            margin: 20px 0;
+        }
+        
+        h3 {
+            color: var(--primary-color);
+            margin: 0 0 15px 0;
+            font-weight: 600;
+        }
+
+        .hidden { display: none !important; }
+
+        .chat {
+            height: 320px;
+            overflow-y: auto;
+            background: #f7f7f7;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .msg {
+            background: #e9e9e9;
+            border-radius: 10px;
+            padding: 8px 12px;
+            align-self: flex-start;
+            word-wrap: break-word;
+            max-width: 80%;
+            animation: message-fade-in 0.3s ease-out;
+        }
+
+        .msg.me {
+            background: var(--primary-color);
+            color: white;
+            align-self: flex-end;
+        }
+        
+        @keyframes message-fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #chatMsg {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            font-size: 16px;
+            color: var(--text-color);
+            transition: border-color 0.3s, box-shadow 0.3s;
+            outline: none;
+        }
+        
+        #chatMsg:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
+        }
+
+        .assignment-card {
+            background: #f7f7f7;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            margin: 12px 0;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        
+        .assignment-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .assignment-card strong {
+            color: var(--primary-color);
+        }
+        
+        .assignment-card a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .assignment-card a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        .assignment-card small {
+            font-size: 12px;
+            color: var(--secondary-text-color);
+            display: block;
+            margin-top: 8px;
+        }
+
+    </style>
 </head>
 <body>
-  <header>
-    <div>IKS 8C</div>
-    <div>Signed in as: <span id="who"></span></div>
-    <div style="display:flex;gap:8px">
-      <button id="adminLink" class="btn">Admin</button>
-      <button class="btn" onclick="logout()">Logout</button>
-    </div>
-  </header>
-  <nav id="subjects"></nav>
-  <div class="wrap">
-    <div class="card">
-      <h3 id="subjectTitle">Assignments</h3>
-      <div id="hwList"></div>
+    <header>
+        <div class="header-title">IKS 8C</div>
+        <div class="header-info">
+            <span>Signed in as: <strong id="who"></strong></span>
+        </div>
+        <div>
+            <button id="adminLink" class="btn">Admin</button>
+            <button class="btn" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <nav id="subjects"></nav>
+
+    <div class="wrap">
+        <div class="card">
+            <h3 id="subjectTitle">Assignments</h3>
+            <div id="hwList"></div>
+        </div>
+
+        <div class="card">
+            <h3>Class Chat</h3>
+            <div id="chatBox" class="chat"></div>
+            <div class="chat-input-container">
+                <input id="chatMsg" placeholder="Write a message...">
+                <button class="btn primary" onclick="sendMsg()">Send</button>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-      <h3>Class Chat</h3>
-      <div id="chatBox" class="chat"></div>
-      <div style="display:flex;gap:8px;margin-top:6px">
-        <input id="chatMsg" class="btn" style="flex:1;text-align:left" placeholder="Write a message...">
-        <button class="btn primary" onclick="sendMsg()">Send</button>
-      </div>
-    </div>
-  </div>
+    <script type="module">
+        import { auth, db } from "./firebase.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const SUBJECTS = ["Arabic", "English", "EnglishPlus", "ICT", "Science", "Social", "Economics"];
+
+        const $ = (id) => document.getElementById(id);
+        const show = (el) => el.classList.remove("hidden");
+        const hide = (el) => el.classList.add("hidden");
+
+        let currentUser = null;
+        let currentSubject = "Arabic";
+
+        onAuthStateChanged(auth, async (u) => {
+            currentUser = u || null;
+            if (!u) {
+                location.href = "login.html";
+                return;
+            }
+            $("who").innerText = u.displayName || u.email;
+            loadSubject(currentSubject);
+            loadChat();
+            // show admin link based on db role (handled in admin page itself)
+            $("adminLink").onclick = () => location.href = "admin.html";
+        });
+
+        window.logout = () => signOut(auth).then(() => location.href = "index.html");
+
+        function selectSubject(sub) {
+            currentSubject = sub;
+            document.querySelectorAll(".sbtn").forEach(b => b.classList.remove("primary"));
+            document.querySelector(`[data-sub='${sub}']`).classList.add("primary");
+            loadSubject(sub);
+        }
+
+        function loadSubject(sub) {
+            $("subjectTitle").innerText = sub.replace("EnglishPlus", "English+").replace("Social", "Social Studies") + " – Assignments";
+            const listEl = $("hwList");
+            listEl.innerHTML = "<p style='text-align:center; color: var(--secondary-text-color);'>Loading...</p>";
+            onValue(ref(db, "homework/" + sub), (snap) => {
+                listEl.innerHTML = "";
+                if (!snap.exists()) {
+                    listEl.innerHTML = "<div class='assignment-card' style='text-align:center'>No assignments yet.</div>";
+                    return;
+                }
+                snap.forEach(ch => {
+                    const d = ch.val();
+                    const div = document.createElement("div");
+                    div.className = "assignment-card";
+                    div.innerHTML = `
+                        <div><strong>${d.text || "Assignment"}</strong></div>
+                        ${d.fileUrl ? `<div><a href='${d.fileUrl}' target='_blank'>Attachment</a></div>` : ""}
+                        <small>Posted ${new Date(d.createdAt || Date.now()).toLocaleString()}</small>
+                    `;
+                    listEl.appendChild(div);
+                });
+            });
+        }
+
+        function loadChat() {
+            const box = $("chatBox");
+            onValue(ref(db, "chat"), (snap) => {
+                box.innerHTML = "";
+                snap.forEach(m => {
+                    const d = m.val();
+                    const div = document.createElement("div");
+                    div.className = "msg" + (d.uid === currentUser?.uid ? " me" : "");
+                    div.textContent = (d.name || "Student") + ": " + d.text;
+                    box.appendChild(div);
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+        }
+
+        window.sendMsg = () => {
+            const input = $("chatMsg");
+            if (!input.value.trim()) return;
+            push(ref(db, "chat"), {
+                uid: currentUser?.uid,
+                name: currentUser?.displayName || "Student",
+                text: input.value.trim(),
+                createdAt: Date.now()
+            });
+            input.value = "";
+        }
+        
+        // Handle Enter key for sending messages
+        $("chatMsg").addEventListener("keypress", (e) => {
+            if (e.key === 'Enter') {
+                window.sendMsg();
+            }
+        });
+
+        // init subject buttons
+        window.addEventListener("DOMContentLoaded", () => {
+            const nav = $("subjects");
+            SUBJECTS.forEach((s, i) => {
+                const b = document.createElement("button");
+                b.className = "btn sbtn" + (i === 0 ? " primary" : "");
+                b.dataset.sub = s;
+                b.textContent = s.replace("EnglishPlus", "English+").replace("Social", "Social Studies");
+                b.onclick = () => selectSubject(s);
+                nav.appendChild(b);
+            });
+        });
+    </script>
 </body>
 </html>
