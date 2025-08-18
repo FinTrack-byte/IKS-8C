@@ -1,10 +1,11 @@
-// firebase.js - Firebase setup (ES Modules)
+// firebase.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-export const firebaseConfig = {
+// Firebase config
+const firebaseConfig = {
   apiKey: "AIzaSyDdLJq7F6r6O9XZTQTIpwdrLR0ZySLGQrY",
   authDomain: "shkl-1db60.firebaseapp.com",
   databaseURL: "https://shkl-1db60-default-rtdb.firebaseio.com",
@@ -15,8 +16,8 @@ export const firebaseConfig = {
   measurementId: "G-PW83MCMQYK"
 };
 
-const app = initializeApp(firebaseConfig);
+// Init
+export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getDatabase(app);
 export const storage = getStorage(app);
-export const googleProvider = new GoogleAuthProvider();
