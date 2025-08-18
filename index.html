@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IKS 8C</title>
+  <style>
+    body{margin:0;font-family:Arial,system-ui;background:#0b0f14;color:#e6edf3;height:100vh;display:grid;place-items:center}
+    .wrap{background:#121821;border:1px solid #233041;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:34px;max-width:520px;text-align:center}
+    h1{margin:0 0 14px 0;font-size:28px}
+    p{margin:0 0 18px 0;color:#a9b7c7}
+    .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+    .btn{padding:12px 16px;border-radius:12px;border:1px solid #2a3340;background:#151b24;color:#d9e2ef;cursor:pointer}
+    .btn.primary{border:0;background:linear-gradient(45deg,#7c3aed,#22d3ee);color:#fff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>IKS 8C</h1>
+    <p>Class portal for assignments, grades, and chat.</p>
+    <div class="row">
+      <button class="btn primary" onclick="location.href='login.html'">Login</button>
+      <button class="btn" onclick="location.href='signup.html'">Sign Up</button>
+      <button class="btn" onclick="location.href='app.html'">Open App</button>
+      <button class="btn" onclick="location.href='admin.html'">Admin</button>
+    </div>
+  </div>
+</body>
+</html>

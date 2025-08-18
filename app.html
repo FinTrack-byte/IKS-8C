@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IKS 8C – App</title>
+  <style>
+    body{font-family:Arial;background:#0b0f14;color:#e6edf3;margin:0}
+    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#121821;border-bottom:1px solid #233041}
+    .btn{padding:8px 12px;border-radius:10px;border:1px solid #2a3340;background:#151b24;color:#d9e2ef;cursor:pointer}
+    .btn.primary{border:0;background:linear-gradient(45deg,#7c3aed,#22d3ee);color:#fff}
+    nav{display:flex;gap:8px;flex-wrap:wrap;padding:12px;background:#0f141b;border-bottom:1px solid #233041}
+    .wrap{padding:16px}
+    .card{background:#121821;border:1px solid #233041;border-radius:14px;padding:14px;margin:10px 0}
+    .hidden{display:none!important}
+    .chat{height:280px;overflow:auto;background:#0f141b;border:1px solid #283547;border-radius:12px;padding:10px;margin-bottom:8px}
+    .msg{background:#121a24;border-radius:10px;padding:6px 8px;margin:6px 0}
+    .msg.me{background:#1a2431}
+    table{width:100%;border-collapse:collapse}
+    td,th{border-bottom:1px solid #233041;padding:8px;text-align:start}
+  </style>
+  <script type="module">
+    import { auth, db } from "./firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const SUBJECTS = ["Arabic","English","EnglishPlus","ICT","Science","Social","Economics"];
+
+    const $ = (id)=>document.getElementById(id);
+    const show = (el)=>el.classList.remove("hidden");
+    const hide = (el)=>el.classList.add("hidden");
+
+    let currentUser=null;
+    let currentSubject="Arabic";
+
+    onAuthStateChanged(auth, async (u)=>{
+      currentUser = u || null;
+      if(!u){ location.href = "login.html"; return; }
+      $("who").innerText = u.displayName || u.email;
+      loadSubject(currentSubject);
+      loadChat();
+      // show admin link based on db role (handled in admin page itself)
+      $("adminLink").onclick = ()=>location.href="admin.html";
+    });
+
+    window.logout = ()=>signOut(auth).then(()=>location.href="index.html");
+
+    function selectSubject(sub){
+      currentSubject=sub;
+      document.querySelectorAll(".sbtn").forEach(b=>b.classList.remove("primary"));
+      document.querySelector(`[data-sub='${sub}']`).classList.add("primary");
+      loadSubject(sub);
+    }
+
+    function loadSubject(sub){
+      $("subjectTitle").innerText = sub+" – Assignments";
+      const listEl = $("hwList");
+      listEl.innerHTML = "Loading...";
+      onValue(ref(db,"homework/"+sub),(snap)=>{
+        listEl.innerHTML = "";
+        if(!snap.exists()){ listEl.innerHTML = "<div class='card'>No assignments yet.</div>"; return; }
+        snap.forEach(ch=>{
+          const d = ch.val();
+          const div = document.createElement("div");
+          div.className="card";
+          div.innerHTML = `
+            <div><strong>${d.text || "Assignment"}</strong></div>
+            ${d.fileUrl ? `<div><a href='${d.fileUrl}' target='_blank'>Attachment</a></div>` : ""}
+            <div style='font-size:12px;color:#9fb0c6;margin-top:6px'>Posted ${new Date(d.createdAt||Date.now()).toLocaleString()}</div>
+          `;
+          listEl.appendChild(div);
+        });
+      });
+    }
+
+    function loadChat(){
+      const box = $("chatBox");
+      onValue(ref(db,"chat"),(snap)=>{
+        box.innerHTML = "";
+        snap.forEach(m=>{
+          const d = m.val();
+          const div = document.createElement("div");
+          div.className = "msg"+(d.uid===currentUser?.uid?" me":"");
+          div.textContent = (d.name||"Student")+": "+d.text;
+          box.appendChild(div);
+        });
+        box.scrollTop = box.scrollHeight;
+      });
+    }
+
+    window.sendMsg = ()=>{
+      const input = $("chatMsg");
+      if(!input.value.trim()) return;
+      push(ref(db,"chat"),{
+        uid: currentUser?.uid, name: currentUser?.displayName || "Student",
+        text: input.value.trim(), createdAt: Date.now()
+      });
+      input.value="";
+    }
+
+    // init subject buttons
+    window.addEventListener("DOMContentLoaded",()=>{
+      const nav = $("subjects");
+      SUBJECTS.forEach((s,i)=>{
+        const b = document.createElement("button");
+        b.className = "btn sbtn"+(i===0?" primary":"");
+        b.dataset.sub=s;
+        b.textContent = s.replace("EnglishPlus","English+").replace("Social","Social Studies");
+        b.onclick = ()=>selectSubject(s);
+        nav.appendChild(b);
+      });
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div>IKS 8C</div>
+    <div>Signed in as: <span id="who"></span></div>
+    <div style="display:flex;gap:8px">
+      <button id="adminLink" class="btn">Admin</button>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+  <nav id="subjects"></nav>
+  <div class="wrap">
+    <div class="card">
+      <h3 id="subjectTitle">Assignments</h3>
+      <div id="hwList"></div>
+    </div>
+
+    <div class="card">
+      <h3>Class Chat</h3>
+      <div id="chatBox" class="chat"></div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input id="chatMsg" class="btn" style="flex:1;text-align:left" placeholder="Write a message...">
+        <button class="btn primary" onclick="sendMsg()">Send</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

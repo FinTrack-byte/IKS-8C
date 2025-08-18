@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin – IKS 8C</title>
+  <style>
+    body{font-family:Arial;background:#0b0f14;color:#e6edf3;margin:0}
+    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#121821;border-bottom:1px solid #233041}
+    .btn{padding:8px 12px;border-radius:10px;border:1px solid #2a3340;background:#151b24;color:#d9e2ef;cursor:pointer}
+    .btn.primary{border:0;background:linear-gradient(45deg,#7c3aed,#22d3ee);color:#fff}
+    .wrap{padding:16px}
+    .card{background:#121821;border:1px solid #233041;border-radius:14px;padding:14px;margin:10px 0}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid #233041;padding:8px;text-align:start}
+    select,input[type='text']{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a3340;background:#0f141b;color:#e6edf3;margin:6px 0}
+    input[type='file']{margin:6px 0}
+    .muted{font-size:12px;color:#9fb0c6}
+  </style>
+  <script type="module">
+    import { auth, db, storage } from "./firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { ref, onValue, update, remove, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+    const SUBJECTS = ["Arabic","English","EnglishPlus","ICT","Science","Social","Economics"];
+    const $=(id)=>document.getElementById(id);
+
+    let me=null;
+    onAuthStateChanged(auth, async (u)=>{
+      if(!u){ location.href="login.html"; return; }
+      me = u;
+      const snap = await get(ref(db,"users/"+u.uid));
+      if(!snap.exists() || snap.val().role!=="admin"){
+        alert("Admins only."); location.href="app.html"; return;
+      }
+      $("who").innerText = u.displayName || u.email;
+      loadUsers();
+      loadHomework();
+    });
+
+    window.logout = ()=>signOut(auth).then(()=>location.href="index.html");
+
+    function loadUsers(){
+      onValue(ref(db,"users"),(snap)=>{
+        const tb = $("usersBody"); tb.innerHTML="";
+        snap.forEach(ch=>{
+          const d = ch.val(); const id = ch.key;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${d.name||"-"}</td>
+            <td>${d.email||"-"}</td>
+            <td>
+              <select data-id="${id}" class="roleSel">
+                <option ${d.role==="student"?"selected":""}>student</option>
+                <option ${d.role==="admin"?"selected":""}>admin</option>
+                <option ${d.role==="disabled"?"selected":""}>disabled</option>
+              </select>
+            </td>
+            <td><button class="btn" data-id="${id}" data-action="softdel">Deactivate</button></td>
+          `;
+          tb.appendChild(tr);
+        });
+        document.querySelectorAll(".roleSel").forEach(s=>{
+          s.onchange = ()=>update(ref(db,"users/"+s.dataset.id),{role:s.value});
+        });
+        document.querySelectorAll("button[data-action='softdel']").forEach(b=>{
+          b.onclick = ()=>update(ref(db,"users/"+b.dataset.id),{role:"disabled"});
+        });
+      });
+    }
+
+    function loadHomework(){
+      SUBJECTS.forEach(sub=>{
+        onValue(ref(db,"homework/"+sub),(snap)=>{
+          const list = $("hw_"+sub); list.innerHTML="";
+          if(!snap.exists()){ list.innerHTML = "<div class='muted'>No assignments.</div>"; return; }
+          snap.forEach(ch=>{
+            const d = ch.val(); const id = ch.key;
+            const div = document.createElement("div");
+            div.className="card";
+            div.innerHTML = `
+              <div><strong>${d.text||"Assignment"}</strong></div>
+              ${d.fileUrl?`<div><a href='${d.fileUrl}' target='_blank'>Attachment</a></div>`:""}
+              <div class='muted'>${new Date(d.createdAt||Date.now()).toLocaleString()}</div>
+              <div style='margin-top:8px;display:flex;gap:8px'>
+                <button class='btn' data-sub='${sub}' data-id='${id}' data-path='${d.filePath||""}' data-action='del'>Delete</button>
+              </div>
+            `;
+            list.appendChild(div);
+          });
+        });
+      });
+
+      document.addEventListener("click", async (e)=>{
+        const t = e.target;
+        if(t.matches("button[data-action='del']")){
+          const sub = t.dataset.sub, id = t.dataset.id, path = t.dataset.path;
+          if(confirm("Delete this assignment?")){
+            if(path){ try{ await deleteObject(sRef(storage, path)); }catch(e){} }
+            await remove(ref(db, `homework/${sub}/${id}`));
+          }
+        }
+      });
+    }
+
+    window.addHw = async ()=>{
+      const sub = $("hwSubject").value;
+      const text = $("hwText").value.trim();
+      const file = $("hwFile").files[0];
+      let fileUrl=null, filePath=null;
+      if(file){
+        filePath = `homework/${sub}/${Date.now()}_${file.name}`;
+        const upRef = sRef(storage, filePath);
+        await uploadBytes(upRef, file);
+        fileUrl = await getDownloadURL(upRef);
+      }
+      await push(ref(db, "homework/"+sub), {
+        text, fileUrl, filePath,
+        authorId: me.uid,
+        createdAt: Date.now()
+      });
+      $("hwText").value=""; $("hwFile").value="";
+      alert("Assignment added.");
+    };
+  </script>
+</head>
+<body>
+  <header>
+    <div>Admin – IKS 8C</div>
+    <div>Signed in as: <span id="who"></span></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="location.href='app.html'">Back to App</button>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <h3>Users</h3>
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+      <div class="muted">Note: Web client cannot delete Firebase Auth users directly. Use role <b>disabled</b> to deactivate.</div>
+    </div>
+
+    <div class="card">
+      <h3>Add Assignment</h3>
+      <select id="hwSubject">
+        <option>Arabic</option><option>English</option><option>EnglishPlus</option>
+        <option>ICT</option><option>Science</option><option>Social</option><option>Economics</option>
+      </select>
+      <input id="hwText" type="text" placeholder="Assignment text (optional)">
+      <input id="hwFile" type="file">
+      <button class="btn primary" onclick="addHw()">Add</button>
+    </div>
+
+    <div class="card">
+      <h3>Assignments by Subject</h3>
+      <div class="card"><h4>Arabic</h4><div id="hw_Arabic"></div></div>
+      <div class="card"><h4>English</h4><div id="hw_English"></div></div>
+      <div class="card"><h4>English+</h4><div id="hw_EnglishPlus"></div></div>
+      <div class="card"><h4>ICT</h4><div id="hw_ICT"></div></div>
+      <div class="card"><h4>Science</h4><div id="hw_Science"></div></div>
+      <div class="card"><h4>Social Studies</h4><div id="hw_Social"></div></div>
+      <div class="card"><h4>Economics</h4><div id="hw_Economics"></div></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up</title>
+  <style>
+    body{font-family:Arial;background:#0b0f14;color:#e6edf3;margin:0;display:grid;place-items:center;height:100vh}
+    .card{background:#121821;border:1px solid #233041;border-radius:16px;padding:24px;width:360px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    h2{margin:0 0 16px 0}
+    .input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a3340;background:#0f141b;color:#e6edf3;margin:8px 0}
+    .btn{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a3340;background:#151b24;color:#d9e2ef;cursor:pointer;margin:6px 0}
+    .btn.primary{border:0;background:linear-gradient(45deg,#22c55e,#06b6d4);color:#fff}
+    #err{color:#ffb4b4;font-size:12px;min-height:16px;margin:6px 0 0 0}
+  </style>
+  <script type="module">
+    import { auth, db } from "./firebase.js";
+    import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    const $=(id)=>document.getElementById(id);
+    const showErr = (m)=>{$("err").innerText=m||"";};
+
+    window.signup = async ()=>{
+      showErr("");
+      const name = $("name").value.trim();
+      const email = $("email").value.trim();
+      const pass = $("pass").value;
+      try{
+        const cred = await createUserWithEmailAndPassword(auth,email,pass);
+        await updateProfile(cred.user,{displayName:name});
+        await set(ref(db,"users/"+cred.user.uid),{
+          name, email, role:"student", createdAt: Date.now()
+        });
+        location.href = "app.html";
+      }catch(e){ showErr(e.message); }
+    }
+  </script>
+</head>
+<body>
+  <div class="card">
+    <h2>Create Account</h2>
+    <input id="name" class="input" placeholder="Full name">
+    <input id="email" class="input" type="email" placeholder="Email">
+    <input id="pass" class="input" type="password" placeholder="Password">
+    <button class="btn primary" onclick="signup()">Sign Up</button>
+    <div id="err"></div>
+    <div style="text-align:center;margin-top:8px">Have an account? <a href="login.html">Login</a></div>
+  </div>
+</body>
+</html>
