@@ -1,28 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IKS 8C</title>
-  <style>
-    body{margin:0;font-family:Arial,system-ui;background:#0b0f14;color:#e6edf3;height:100vh;display:grid;place-items:center}
-    .wrap{background:#121821;border:1px solid #233041;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:34px;max-width:520px;text-align:center}
-    h1{margin:0 0 14px 0;font-size:28px}
-    p{margin:0 0 18px 0;color:#a9b7c7}
-    .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-    .btn{padding:12px 16px;border-radius:12px;border:1px solid #2a3340;background:#151b24;color:#d9e2ef;cursor:pointer}
-    .btn.primary{border:0;background:linear-gradient(45deg,#7c3aed,#22d3ee);color:#fff}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IKS 8C - Welcome</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6a0dad;
+            --secondary-color: #8b5cf6;
+            --background-start: #e0eafc;
+            --background-end: #cfdef3;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --secondary-text-color: #666666;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--background-start), var(--background-end));
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Background Animation */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: -50px;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+            animation: move-background 20s infinite alternate ease-in-out;
+            z-index: 0;
+        }
+
+        @keyframes move-background {
+            from {
+                transform: translate(0, 0);
+            }
+            to {
+                transform: translate(100px, 100px);
+            }
+        }
+
+        .wrap {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            width: 400px;
+            max-width: 90%;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            animation: card-appear 0.6s ease-out;
+        }
+
+        @keyframes card-appear {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+            font-size: 32px;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 0 0 30px 0;
+            color: var(--secondary-text-color);
+            font-size: 16px;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            border: 2px solid var(--secondary-color);
+            background: transparent;
+            color: var(--primary-color);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            background-color: rgba(139, 92, 246, 0.1);
+        }
+
+        .btn.primary {
+            border: none;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3);
+        }
+
+        .btn.primary:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(45deg, #7c3aed, #8b5cf6);
+            box-shadow: 0 6px 20px rgba(106, 13, 173, 0.4);
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>IKS 8C</h1>
-    <p>Class portal for assignments, grades, and chat.</p>
-    <div class="row">
-      <button class="btn primary" onclick="location.href='login.html'">Login</button>
-      <button class="btn" onclick="location.href='signup.html'">Sign Up</button>
-      
+    <div class="wrap">
+        <h1>IKS 8C</h1>
+        <p>بوابة الفصل للواجبات، الدرجات، والمحادثات.</p>
+        <div class="row">
+            <button class="btn primary" onclick="location.href='login.html'">تسجيل الدخول</button>
+            <button class="btn" onclick="location.href='signup.html'">إنشاء حساب</button>
+        </div>
     </div>
-  </div>
 </body>
 </html>
