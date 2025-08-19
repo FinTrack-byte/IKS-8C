@@ -287,7 +287,8 @@
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        const SUBJECTS = ["Arabic", "English", "EnglishPlus", "ICT", "Science", "Social", "Economics"];
+        // Added "Math" to the list of subjects
+        const SUBJECTS = ["Arabic", "English", "EnglishPlus", "ICT", "Math", "Science", "Social", "Economics"];
 
         const $ = (id) => document.getElementById(id);
         const show = (el) => el.classList.remove("hidden");
