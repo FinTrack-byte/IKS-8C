@@ -88,7 +88,7 @@
             background: linear-gradient(45deg, #7c3aed, #8b5cf6);
             box-shadow: 0 6px 20px rgba(106, 13, 173, 0.4);
         }
-        
+        
         .btn.secondary {
             border: 2px solid var(--primary-color);
             background: transparent;
@@ -126,13 +126,13 @@
             padding: 24px;
             margin: 20px 0;
         }
-        
+        
         h3, h4 {
             color: var(--primary-color);
             margin: 0 0 15px 0;
             font-weight: 600;
         }
-        
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -167,7 +167,7 @@
             outline: none;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
-        
+        
         select:focus, input[type='text']:focus {
             border-color: var(--secondary-color);
             box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
@@ -179,7 +179,7 @@
             margin-top: 10px;
             display: block;
         }
-        
+        
         .assignment-card {
             background: #f7f7f7;
             border: 1px solid var(--border-color);
@@ -188,7 +188,7 @@
             margin: 12px 0;
             transition: box-shadow 0.2s, transform 0.2s;
         }
-        
+        
         .assignment-card:hover {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             transform: translateY(-2px);
@@ -197,19 +197,19 @@
         .assignment-card strong {
             color: var(--primary-color);
         }
-        
+        
         .assignment-card a, .assignment-card img {
             display: block;
             margin-top: 10px;
         }
-        
+        
         .assignment-card a {
             color: var(--secondary-color);
             text-decoration: none;
             font-weight: 600;
             transition: color 0.3s;
         }
-        
+        
         .assignment-card a:hover {
             color: var(--primary-color);
             text-decoration: underline;
@@ -227,7 +227,7 @@
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { ref, onValue, update, remove, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // تحديث: إضافة "Math" إلى مصفوفة المواد
+        // تم تحديث هذه المصفوفة لتشمل "Math"
         const SUBJECTS = ["Arabic", "English", "EnglishPlus", "ICT", "Math", "Science", "Social", "Economics"];
         const $ = (id) => document.getElementById(id);
 
