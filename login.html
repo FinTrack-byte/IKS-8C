@@ -159,40 +159,48 @@
         <p class="signup-text">Don't have an account? <a href="signup.html">Sign Up</a></p>
     </div>
 
-    <script type="module">
-        import { auth, db } from "./firebase.js";
-        import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { ref, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+   <script type="module">
+    import { auth, db } from "./firebase.js";
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { ref, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // Login with Email/Password
-        document.getElementById("loginForm").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("loginEmail").value;
-            const password = document.getElementById("loginPassword").value;
+    // Login with Email/Password
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
 
-            try {
-                const cred = await signInWithEmailAndPassword(auth, email, password);
-                const snap = await get(child(ref(db), "users/" + cred.user.uid));
-                if (snap.exists()) {
-                    const userData = snap.val();
-                    if (userData.role === "admin") {
-                        window.location.href = "admin.html";
-                    } else {
-                        window.location.href = "app.html";
-                    }
+        try {
+            const cred = await signInWithEmailAndPassword(auth, email, password);
+            const snap = await get(child(ref(db), "users/" + cred.user.uid));
+            
+            if (snap.exists()) {
+                const userData = snap.val();
+
+                // ✅ هنا الشرط الجديد للباند
+                if (userData.role === "disabled") {
+                    window.location.href = "banned.html";
+                    return; // نوقف أي كود بعده
+                }
+
+                if (userData.role === "admin") {
+                    window.location.href = "admin.html";
                 } else {
-                    await set(ref(db, "users/" + cred.user.uid), {
-                        name: cred.user.displayName || "Unknown",
-                        email: cred.user.email,
-                        role: "student",
-                        createdAt: Date.now()
-                    });
                     window.location.href = "app.html";
                 }
-            } catch (error) {
-                alert("Login failed: " + error.message);
+            } else {
+                await set(ref(db, "users/" + cred.user.uid), {
+                    name: cred.user.displayName || "Unknown",
+                    email: cred.user.email,
+                    role: "student",
+                    createdAt: Date.now()
+                });
+                window.location.href = "app.html";
             }
-        });
-    </script>
+        } catch (error) {
+            alert("Login failed: " + error.message);
+        }
+    });
+</script>
 </body>
 </html>
